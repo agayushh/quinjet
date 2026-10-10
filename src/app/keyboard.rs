@@ -45,7 +45,7 @@ impl App {
         }
 
         match key.code {
-            KeyCode::Char('q') if !self.exit_locked() => effects.push(AppEffect::Quit),
+            KeyCode::Char('q') => effects.push(self.close_current_repository_tab()),
             KeyCode::Char('?') => {
                 self.modal = Some(Modal::Help {
                     selected: 0,
@@ -81,6 +81,10 @@ impl App {
             KeyCode::Char('/') => {
                 self.open_list_search();
             }
+            KeyCode::Char('z') if key.modifiers.contains(KeyModifiers::ALT) => {
+                self.toggle_code_wrap();
+            }
+            KeyCode::Char('0') => self.horizontal_scroll = 0,
             KeyCode::Char('v') => self.toggle_diff_layout(),
             KeyCode::Char('e' | 'E') if self.check_log_visible() => {
                 self.toggle_all_check_steps();
@@ -402,10 +406,10 @@ impl App {
                 self.navigate_check_section_horizontal(true, now);
             }
             KeyCode::Left | KeyCode::Char('h') if self.focus == Focus::Content => {
-                self.horizontal_scroll = self.horizontal_scroll.saturating_sub(4);
+                self.scroll_horizontal_by(false, 4);
             }
             KeyCode::Right | KeyCode::Char('l') if self.focus == Focus::Content => {
-                self.horizontal_scroll = self.horizontal_scroll.saturating_add(4);
+                self.scroll_horizontal_by(true, 4);
             }
             _ => {}
         }

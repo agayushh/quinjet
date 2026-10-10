@@ -168,6 +168,10 @@ impl App {
             return effects;
         }
         if self.modal.is_some() {
+            self.horizontal_scroll_drag = None;
+            return effects;
+        }
+        if self.handle_horizontal_scrollbar_mouse(event) {
             return effects;
         }
         if event.modifiers.contains(KeyModifiers::SHIFT) {
@@ -180,10 +184,10 @@ impl App {
             }
             match event.kind {
                 MouseEventKind::ScrollUp | MouseEventKind::ScrollLeft => {
-                    self.scroll_horizontal(false);
+                    self.scroll_horizontal_at(event, false);
                 }
                 MouseEventKind::ScrollDown | MouseEventKind::ScrollRight => {
-                    self.scroll_horizontal(true);
+                    self.scroll_horizontal_at(event, true);
                 }
                 _ => {}
             }
@@ -374,10 +378,10 @@ impl App {
                 }
             }
             MouseEventKind::ScrollLeft => {
-                self.scroll_horizontal(false);
+                self.scroll_horizontal_at(event, false);
             }
             MouseEventKind::ScrollRight => {
-                self.scroll_horizontal(true);
+                self.scroll_horizontal_at(event, true);
             }
             _ => {}
         }

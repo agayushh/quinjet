@@ -44,7 +44,6 @@ const PULL_REQUEST_PREFETCH_BATCH: usize = 32;
 const PULL_REQUEST_PREFETCH_BYTE_BUDGET: usize = 6 * 1024 * 1024;
 const PULL_REQUEST_PATCH_FALLBACK_ESTIMATE: usize = 512 * 1024;
 const PULL_REQUEST_PATCH_LINE_ESTIMATE: usize = 80;
-const MAX_PREFETCHED_PULL_REQUEST_FILES: usize = 4_096;
 const MAX_PULL_REQUEST_DOCUMENT_BYTES: usize = 32 * 1024 * 1024;
 #[doc = " Poll cadences for an open pull request. A run in progress changes state in"]
 #[doc = " seconds and is worth watching closely; a settled pull request only needs to"]
@@ -131,6 +130,7 @@ fn updated_recent_pull_requests(
 mod changes;
 mod dialogs;
 mod geometry;
+mod horizontal_scrollbar;
 mod initialization;
 mod interaction;
 mod keyboard;
@@ -155,6 +155,7 @@ mod projects;
 mod pull_request_actions;
 mod pull_request_checks;
 mod pull_request_diff;
+mod pull_request_prefetch;
 mod pull_request_review;
 mod pull_request_stack;
 mod refresh;
@@ -212,6 +213,7 @@ pub(crate) struct App {
     pub view_states: ViewStates,
     pub focus: Focus,
     pub diff_layout: DiffLayout,
+    pub wrap_code: bool,
     pub theme: Theme,
     pub theme_selection: ThemeSelection,
     pub appearance_choice: AppearanceChoice,
@@ -310,7 +312,10 @@ pub(crate) struct App {
     pub preview_layout: OnceCell<PreviewLayout>,
     pub unified_diff_rows: Vec<usize>,
     pub side_by_side_diff_rows: Vec<SideBySideRow>,
-    pub diff_rows_key: Option<(u64, bool)>,
+    pub diff_rows_key: Option<(u64, bool, u16, u16, bool)>,
+    pub diff_wrap_offsets: Vec<(usize, usize)>,
+    pub diff_scroll_anchor: Option<(usize, usize, usize)>,
+    pub diff_restore_scroll: bool,
     pub selected_change_section: Option<ChangeSection>,
     pub collapsed_change_sections: HashSet<ChangeSection>,
     pub checked_change_paths: HashSet<PathBuf>,
@@ -335,6 +340,9 @@ pub(crate) struct App {
     pub sidebar_last_cursor: Option<usize>,
     pub content_scroll: usize,
     pub horizontal_scroll: usize,
+    pub horizontal_scroll_limit: usize,
+    pub horizontal_scroll_regions: Vec<Rect>,
+    pub horizontal_scroll_drag: Option<HorizontalScrollDrag>,
     pub sidebar_width: u16,
     pub sidebar_hidden: bool,
     pub diff_split_percent: u16,
@@ -387,7 +395,10 @@ pub(crate) struct App {
     pub pull_request_documents: HashMap<PathBuf, DiffDocument>,
     pub pull_request_document_order: VecDeque<PathBuf>,
     pub pull_request_document_bytes: usize,
-    pub pull_request_prefetched_paths: HashSet<PathBuf>,
+    pub pull_request_viewport_paths: Vec<PathBuf>,
+    pub pull_request_scroll_anchor: Option<(PathBuf, usize, usize)>,
+    pub pull_request_restore_scroll: bool,
+    pub pull_request_prefetch_paths: Vec<PathBuf>,
     pub pull_request_loading_path: Option<PathBuf>,
     #[doc = " The path whose patch currently occupies `document` in single-file view."]
     #[doc = " Tracking it explicitly keeps the cache authoritative about which files"]

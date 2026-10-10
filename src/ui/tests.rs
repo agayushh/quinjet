@@ -105,6 +105,7 @@ fn rendered_text(buffer: &Buffer) -> String {
         .collect()
 }
 
+mod code_wrap;
 mod controls;
 mod diff;
 mod file_labels;
@@ -114,7 +115,9 @@ mod modals;
 mod overview;
 mod performance;
 mod preview_layout;
+mod pull_request_viewport;
 mod rendering;
+mod scroll_guard;
 mod scrolling;
 mod stack;
 mod stack_layout;
