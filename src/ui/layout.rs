@@ -9,12 +9,15 @@ pub(crate) fn draw(frame: &mut Frame<'_>, app: &mut App, theme: &Theme) {
     app.horizontal_scroll_regions.clear();
     app.horizontal_scroll_limit = 0;
     app.geometry.horizontal_scrollbar = None;
+    app.geometry.sidebar_scrollbar = None;
+    app.geometry.content_scrollbar = None;
     frame.render_widget(
         Block::default().style(Style::default().bg(theme.background)),
         frame.area(),
     );
 
     if frame.area().width < 72 || frame.area().height < 18 {
+        app.cancel_unavailable_scrollbar_drag();
         draw_too_small(frame, theme);
         return;
     }
@@ -96,8 +99,6 @@ pub(crate) fn draw(frame: &mut Frame<'_>, app: &mut App, theme: &Theme) {
     let horizontal_scrollbar = horizontal_scrollbar::draw(frame, workspace.content, app, theme);
     if let Some(scrollbar) = horizontal_scrollbar {
         app.horizontal_scroll_regions.push(scrollbar.area);
-    } else {
-        app.horizontal_scroll_drag = None;
     }
     draw_footer(frame, footer, app, theme, &mut link_hits, &mut project_hits);
 
@@ -116,6 +117,8 @@ pub(crate) fn draw(frame: &mut Frame<'_>, app: &mut App, theme: &Theme) {
         content: workspace.content,
         diff_divider: workspace.diff_divider,
         horizontal_scrollbar,
+        sidebar_scrollbar: app.geometry.sidebar_scrollbar,
+        content_scrollbar: app.geometry.content_scrollbar,
         sidebar_hits: workspace.sidebar_hits,
         stack_inspector_hits: workspace.stack_inspector_hits,
         scm_action_hits,
@@ -132,6 +135,7 @@ pub(crate) fn draw(frame: &mut Frame<'_>, app: &mut App, theme: &Theme) {
         project_collapse_hits: Vec::new(),
     };
 
+    app.cancel_unavailable_scrollbar_drag();
     let frame_area = frame.area();
     app.rendered_cells = snapshot_cells(frame.buffer_mut(), frame_area);
     if let Some(selection) = app.text_selection {

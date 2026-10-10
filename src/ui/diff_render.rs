@@ -265,26 +265,44 @@ pub(super) const fn line_foreground(kind: DiffLineKind, theme: &Theme) -> Color 
     }
 }
 
-#[expect(clippy::integer_division, reason = "layout maths works in whole cells")]
 pub(super) fn draw_scrollbar(
     frame: &mut Frame<'_>,
-    area: Rect,
-    offset: usize,
-    length: usize,
+    scrollbar: Option<crate::app::Scrollbar>,
     theme: &Theme,
 ) {
-    if length <= area.height as usize || area.width == 0 {
+    let Some(scrollbar) = scrollbar else {
         return;
+    };
+    for row in scrollbar.track.y..scrollbar.track.bottom() {
+        for column in scrollbar.track.x..scrollbar.track.right() {
+            let in_thumb = scrollbar.thumb.contains((column, row).into());
+            let symbol = match (scrollbar.horizontal, in_thumb) {
+                (true, true) => "━",
+                (true, false) => "─",
+                (false, true) => "▐",
+                (false, false) => "│",
+            };
+            frame.render_widget(
+                Paragraph::new(symbol).style(Style::default().fg(if in_thumb {
+                    theme.accent_soft
+                } else {
+                    theme.border
+                })),
+                Rect::new(column, row, 1, 1),
+            );
+        }
     }
-    let height = area.height as usize;
-    let thumb_height = (height * height / length).max(1).min(height);
-    let max_offset = length.saturating_sub(height).max(1);
-    let thumb_start = offset.min(max_offset) * (height - thumb_height) / max_offset;
-    for row in thumb_start..thumb_start + thumb_height {
-        frame.render_widget(
-            Paragraph::new("▐").style(Style::default().fg(theme.accent_soft)),
-            Rect::new(area.right().saturating_sub(1), area.y + cells(row), 1, 1),
-        );
+    if scrollbar.horizontal {
+        for (column, symbol) in [
+            (scrollbar.area.x, "◀"),
+            (scrollbar.area.right().saturating_sub(1), "▶"),
+        ] {
+            frame.render_widget(
+                Paragraph::new(symbol)
+                    .style(Style::default().fg(theme.accent_soft).bg(theme.panel)),
+                Rect::new(column, scrollbar.area.y, 1, 1),
+            );
+        }
     }
 }
 
