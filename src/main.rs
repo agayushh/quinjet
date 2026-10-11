@@ -12,6 +12,7 @@ mod state;
 mod state_sorting;
 mod tabs;
 mod terminal;
+mod terminal_input;
 mod terminal_launch;
 mod theme;
 mod ui;
@@ -27,7 +28,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 use crossbeam_channel::tick;
-use crossterm::event::{self, Event, KeyEventKind};
+use crossterm::event::{Event, KeyEventKind};
 
 use crate::app::{AppEffect, Modal};
 use crate::cli::{Launch, TerminalOptions};
@@ -135,6 +136,7 @@ fn open_terminal(
     let render_tick = tick(Duration::from_millis(16));
     let relative_time_tick = tick(Duration::from_secs(1));
     let periodic_refresh = tick(Duration::from_secs(10));
+    let mut input = terminal_input::Reader::default();
     let mut dirty = true;
     let mut running = true;
     let mut switch_ssh_machine = None;
@@ -236,8 +238,7 @@ fn open_terminal(
             dirty = true;
         }
 
-        if event::poll(Duration::from_millis(8)).context("failed to poll terminal events")? {
-            let event = event::read().context("failed to read terminal event")?;
+        for event in input.read_batch()? {
             if let Some(current) = workspace.as_mut() {
                 let Some(id) = current.active_id() else {
                     break;
@@ -325,6 +326,9 @@ fn open_terminal(
                 }
             }
             dirty = true;
+            if !running {
+                break;
+            }
         }
     }
 

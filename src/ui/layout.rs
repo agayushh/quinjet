@@ -7,6 +7,9 @@ use super::*;
 )]
 pub(crate) fn draw(frame: &mut Frame<'_>, app: &mut App, theme: &Theme) {
     app.horizontal_scroll_regions.clear();
+    app.geometry.diff_viewport = None;
+    app.geometry.sidebar_max_scroll = None;
+    app.geometry.content_max_scroll = None;
     app.horizontal_scroll_limit = 0;
     app.geometry.horizontal_scrollbar = None;
     app.geometry.sidebar_scrollbar = None;
@@ -116,6 +119,9 @@ pub(crate) fn draw(frame: &mut Frame<'_>, app: &mut App, theme: &Theme) {
         sidebar_divider: workspace.sidebar_divider,
         content: workspace.content,
         diff_divider: workspace.diff_divider,
+        diff_viewport: app.geometry.diff_viewport,
+        sidebar_max_scroll: app.geometry.sidebar_max_scroll,
+        content_max_scroll: app.geometry.content_max_scroll,
         horizontal_scrollbar,
         sidebar_scrollbar: app.geometry.sidebar_scrollbar,
         content_scrollbar: app.geometry.content_scrollbar,
@@ -138,6 +144,7 @@ pub(crate) fn draw(frame: &mut Frame<'_>, app: &mut App, theme: &Theme) {
     app.cancel_unavailable_scrollbar_drag();
     let frame_area = frame.area();
     app.rendered_cells = snapshot_cells(frame.buffer_mut(), frame_area);
+    hover::draw(frame, app, theme);
     if let Some(selection) = app.text_selection {
         draw_text_selection(frame, selection, theme);
     }
