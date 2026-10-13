@@ -19,7 +19,7 @@ env:
 jobs:
   full-check:
     name: Full check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -27,22 +27,32 @@ jobs:
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
         with:
           components: rustfmt, clippy
-      - uses: taiki-e/install-action@288e746965032cfcc232e09af2daf5f23c14d780
+      - uses: taiki-e/install-action@ab6895351a88b908e96a4697860d4ffea5e57dbe
         with:
-          tool: cargo-deny,cargo-audit,cargo-machete,cargo-hack,cargo-llvm-cov,shellcheck,shfmt,taplo-cli,typos,zizmor,editorconfig-checker
+          tool: >-
+            cargo-deny,cargo-audit,cargo-machete,cargo-shear,cargo-hack,cargo-llvm-cov,cargo-sort,cargo-spellcheck,
+            osv-scanner,shellcheck,shfmt,taplo-cli,typos,zizmor,editorconfig-checker
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version: stable
           cache: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
+        with:
+          version: 0.12.18
+          enable-cache: false
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
       - name: Install the remaining checkers
         run: |
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-          pipx install yamllint==1.38.0
+          uv tool install yamllint==1.38.0
+          uv tool install ruff==0.16.9
           npm ci --ignore-scripts --prefix .github/tools
           echo "${GITHUB_WORKSPACE}/.github/tools/node_modules/.bin" >>"${GITHUB_PATH}"
       - name: make ci
         run: make ci
+      - name: Remove the packaged crate before the cache saves
+        if: always()
+        run: rm -rf target/package
 
   future-toolchain:
     name: Rust ${{ matrix.toolchain }}
@@ -50,7 +60,7 @@ jobs:
       fail-fast: false
       matrix:
         toolchain: [beta, nightly]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -65,7 +75,7 @@ jobs:
 
   links:
     name: Links
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -74,25 +84,26 @@ jobs:
         with:
           args: --config lychee.toml './**/*.md'
           fail: true
+          jobSummary: false
 
   fuzz:
     name: Fuzz webhook parsing
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@7c8d7d138f5c09cef361f8214cf96882cd029cdb
-      - uses: taiki-e/install-action@288e746965032cfcc232e09af2daf5f23c14d780
+      - uses: taiki-e/install-action@ab6895351a88b908e96a4697860d4ffea5e57dbe
         with:
           tool: cargo-fuzz
-      - run: cargo fuzz run webhook -- -runs=5000
+      - run: cargo fuzz run --target x86_64-unknown-linux-gnu webhook -- -runs=5000
 
   report:
     name: Report
     if: always() && contains(needs.*.result, 'failure')
     needs: [full-check, future-toolchain, links, fuzz]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment: pukbot-production
     steps:
       - id: app-token
