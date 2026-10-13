@@ -13,6 +13,9 @@ impl App {
             StackInspectorHit::Section(section) => {
                 self.select_stack_member_section(section, effects);
             }
+            StackInspectorHit::Commit(index) => {
+                self.inspect_stack_commit(usize::from(index), effects);
+            }
             StackInspectorHit::TipChecks => self.inspect_pull_request_stack_tip(now, effects),
             StackInspectorHit::Diff => self.open_pull_request_stack_diff(effects),
             StackInspectorHit::Review => self.open_stack_member_review(effects, now),
@@ -59,6 +62,11 @@ impl App {
                     self.schedule_preview(now);
                 }
             }
+            SidebarHit::PullRequestCommits => {
+                self.select_pull_request_section(PullRequestSection::Commits, effects);
+            }
+            SidebarHit::PullRequestCommit(index) => self.inspect_pr_commit(Some(index), effects),
+            SidebarHit::PullRequestAllCommits => self.inspect_pr_commit(None, effects),
             SidebarHit::PullRequestFiles => {
                 self.select_pull_request_section(PullRequestSection::Files, effects);
             }

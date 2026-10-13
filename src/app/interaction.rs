@@ -163,16 +163,31 @@ impl App {
                 .map(|member| member.url.as_str())
                 .filter(|url| !url.is_empty());
         }
+        if self.pull_request_section == PullRequestSection::Commits {
+            return self
+                .pr_commits
+                .snapshot
+                .commits
+                .get(self.pr_commits.cursor)
+                .map(|commit| commit.url.as_str())
+                .filter(|url| !url.is_empty());
+        }
         let check = self
             .selected_pull_request_check()
             .map(|check| check.link.as_str())
             .filter(|link| !link.is_empty());
-        check.or_else(|| {
-            self.pull_request
-                .as_ref()
-                .map(|pull_request| pull_request.url.as_str())
-                .filter(|url| !url.is_empty())
-        })
+        check
+            .or_else(|| {
+                self.selected_pr_commit()
+                    .map(|commit| commit.url.as_str())
+                    .filter(|url| !url.is_empty())
+            })
+            .or_else(|| {
+                self.pull_request
+                    .as_ref()
+                    .map(|pull_request| pull_request.url.as_str())
+                    .filter(|url| !url.is_empty())
+            })
     }
 
     pub(super) fn open_selection_on_github(&mut self, effects: &mut Vec<AppEffect>, now: Instant) {

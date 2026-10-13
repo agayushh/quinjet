@@ -7,6 +7,9 @@ pub(crate) enum SidebarHit {
     Change(usize),
     Commit(usize),
     PullRequestFiles,
+    PullRequestCommits,
+    PullRequestCommit(usize),
+    PullRequestAllCommits,
     PullRequestOverview,
     PullRequestStack,
     PullRequestStackMember(usize),
@@ -29,6 +32,7 @@ pub(crate) struct SidebarHitArea {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum StackInspectorHit {
     Section(StackMemberSection),
+    Commit(u16),
     TipChecks,
     Diff,
     Review,

@@ -154,6 +154,15 @@ pub(super) struct PrArgs {
 }
 
 #[derive(Debug, Args)]
+pub(super) struct PrCommitsArgs {
+    #[command(flatten)]
+    pub(super) pull_request: PrArgs,
+    #[doc = " Show only commits introduced by the pull request"]
+    #[arg(long)]
+    pub(super) introduced_only: bool,
+}
+
+#[derive(Debug, Args)]
 pub(super) struct PrWatchArgs {
     #[command(flatten)]
     pub(super) pull_request: PrArgs,
@@ -406,7 +415,19 @@ pub(super) struct PrRevertArgs {
 }
 
 #[derive(Debug, Args)]
+pub(super) struct PrFilesArgs {
+    #[command(flatten)]
+    pub(super) pull_request: PrArgs,
+    #[doc = " Inspect one commit from the pull request"]
+    #[arg(long, value_name = "HASH", value_hint = ValueHint::Other)]
+    pub(super) commit: Option<String>,
+}
+
+#[derive(Debug, Args)]
 pub(super) struct PrDiffArgs {
+    #[doc = " Inspect one commit from the pull request"]
+    #[arg(long, value_name = "HASH", value_hint = ValueHint::Other)]
+    pub(super) commit: Option<String>,
     #[command(flatten)]
     pub(super) pull_request: PrArgs,
     #[doc = " Limit the patch to one path"]
@@ -416,6 +437,9 @@ pub(super) struct PrDiffArgs {
 
 #[derive(Debug, Args)]
 pub(super) struct PrChecksArgs {
+    #[doc = " Inspect one commit from the pull request"]
+    #[arg(long, value_name = "HASH", value_hint = ValueHint::Other)]
+    pub(super) commit: Option<String>,
     #[command(flatten)]
     pub(super) pull_request: PrArgs,
     #[doc = " Keep reading until every check has settled"]
@@ -438,6 +462,9 @@ pub(super) struct PrChecksArgs {
 
 #[derive(Debug, Args)]
 pub(super) struct PrLogsArgs {
+    #[doc = " Inspect one commit from the pull request"]
+    #[arg(long, value_name = "HASH", value_hint = ValueHint::Other)]
+    pub(super) commit: Option<String>,
     #[command(flatten)]
     pub(super) pull_request: PrArgs,
     #[doc = " Check run to read, by name"]

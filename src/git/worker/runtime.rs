@@ -202,12 +202,27 @@ pub(super) fn run_worker(
                 generation,
                 pull_request,
             } => load_stack_member_conversation(&mut session, identity, generation, pull_request),
+            WorkerCommand::LoadPullRequestCommits {
+                generation,
+                pull_request,
+            } => WorkerEvent::PullRequestCommits {
+                generation,
+                result: answer(
+                    session
+                        .execute(Command::PullRequestCommits {
+                            introduced_only: false,
+                            pull_request,
+                        })
+                        .and_then(Outcome::commits),
+                ),
+            },
             WorkerCommand::LoadPullRequestStackMemberCommits {
                 identity,
                 generation,
                 pull_request,
             } => load_stack_member_commits(&mut session, identity, generation, pull_request),
             WorkerCommand::PreparePullRequest {
+                commit,
                 generation,
                 pull_request,
             } => WorkerEvent::PullRequestIndex {
@@ -216,6 +231,7 @@ pub(super) fn run_worker(
                     session
                         .execute_with(
                             Command::PreparePullRequest {
+                                commit,
                                 workspace: generation,
                                 pull_request,
                             },
@@ -289,6 +305,7 @@ pub(super) fn run_worker(
                 ),
             },
             WorkerCommand::LoadPullRequestChecks {
+                commit,
                 generation,
                 pull_request,
                 refresh,
@@ -297,6 +314,7 @@ pub(super) fn run_worker(
                 result: answer(
                     session
                         .execute(Command::PullRequestChecks {
+                            commit,
                             pull_request,
                             refresh,
                         })

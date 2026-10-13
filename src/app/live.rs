@@ -84,6 +84,7 @@ impl App {
     #[doc = " not which of four endpoints is answering."]
     pub(crate) const fn pull_request_refreshing(&self) -> bool {
         self.pull_request_loading
+            || self.pr_commits.loading
             || self.pull_request_stack_loading
             || self.pull_request_checks_loading
             || self.pull_request_conversation_loading
@@ -127,7 +128,7 @@ impl App {
             .checks
             .iter()
             .any(|check| check.status.is_running());
-        let root_running = self.pull_request_stack.is_none()
+        let root_running = (self.pull_request_stack.is_none() || self.pr_commits.owner.is_some())
             && self
                 .pull_request_checks
                 .iter()
@@ -173,7 +174,7 @@ impl App {
             .pull_request
             .as_ref()
             .is_some_and(|pull_request| matches!(pull_request.state.as_str(), "MERGED" | "CLOSED"));
-        if self.pull_request_stack.is_some() {
+        if self.pull_request_stack.is_some() && self.pr_commits.owner.is_none() {
             self.refresh_stack_inspector_live(now, force, effects);
             if (!settled || force)
                 && due(self.pull_request_detail_read_at, PULL_REQUEST_DETAIL_POLL)
@@ -202,8 +203,10 @@ impl App {
         if due(self.pull_request_detail_read_at, PULL_REQUEST_DETAIL_POLL) {
             let issued = effects.len();
             self.request_pull_request_lookup(number, true, true, effects);
-            self.request_pull_request_conversation(true, effects);
-            self.request_pull_request_review(true, effects);
+            if self.selected_pr_commit().is_none() {
+                self.request_pull_request_conversation(true, effects);
+                self.request_pull_request_review(true, effects);
+            }
             if effects.len() > issued {
                 self.pull_request_detail_read_at = Some(now);
             }

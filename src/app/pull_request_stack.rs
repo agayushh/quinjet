@@ -18,9 +18,15 @@ impl App {
 
     pub(super) fn pull_request_diff_source_for_section(&self) -> Option<PullRequestDiffSource> {
         match self.pull_request_section {
-            PullRequestSection::Overview | PullRequestSection::Files => {
-                Some(PullRequestDiffSource::PullRequest)
-            }
+            PullRequestSection::Overview
+            | PullRequestSection::Files
+            | PullRequestSection::Commits => Some(
+                self.pr_commits
+                    .selected
+                    .map_or(PullRequestDiffSource::PullRequest, |index| {
+                        PullRequestDiffSource::Commit { index }
+                    }),
+            ),
             PullRequestSection::Stack => self
                 .pull_request_stack_range()
                 .map(|(from, to)| PullRequestDiffSource::Stack { from, to }),
@@ -32,7 +38,14 @@ impl App {
         source: PullRequestDiffSource,
     ) -> Option<PullRequest> {
         match source {
-            PullRequestDiffSource::PullRequest => self.pull_request.clone(),
+            PullRequestDiffSource::PullRequest => self.selected_pull_request().cloned(),
+            PullRequestDiffSource::Commit { index } => {
+                let mut request = self.selected_pull_request()?.clone();
+                request
+                    .head_oid
+                    .clone_from(&self.pr_commits.snapshot.commits.get(index)?.oid);
+                Some(request)
+            }
             PullRequestDiffSource::Stack { from, to } => {
                 self.pull_request_stack.as_ref()?.comparison(from, to).ok()
             }
@@ -50,6 +63,7 @@ impl App {
         let previous = self.pull_request_stack.take();
         let changed = previous.as_ref() != stack.as_ref();
         self.pull_request_stack = stack;
+        self.reconcile_pr_commit_owner(effects);
         let workspace_changed = previous.as_ref().map(|stack| &stack.node_id)
             != self.pull_request_stack.as_ref().map(|stack| &stack.node_id);
         let selection = self.pull_request_stack.as_ref().map(|current| {
@@ -74,7 +88,9 @@ impl App {
             self.reset_view_sidebar_scroll(View::PullRequests);
             self.request_pull_request_stack_prefetch(effects);
         }
-        if self.pull_request_stack.is_some() {
+        if self.pull_request_stack.is_some()
+            && (workspace_changed || self.pr_commits.owner.is_none())
+        {
             self.pull_request_section = PullRequestSection::Stack;
             self.sidebar_hidden = false;
             self.pull_request_lookup_active = false;

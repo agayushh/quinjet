@@ -279,6 +279,10 @@ impl App {
         match self.view {
             View::Changes | View::History => unreachable!("local diff views returned above"),
             View::PullRequests => {
+                if self.pull_request_section == PullRequestSection::Commits {
+                    self.show_pr_commit_summary();
+                    return;
+                }
                 let Some(pull_request) = self.selected_pull_request().cloned() else {
                     self.document_loading = false;
                     if self.pull_request_section == PullRequestSection::Files {
@@ -372,9 +376,13 @@ impl App {
         self.pull_request_diff_source = Some(source);
         let command = match source {
             PullRequestDiffSource::PullRequest => WorkerCommand::PreparePullRequest {
+                commit: None,
                 generation: self.diff_generation,
                 pull_request: Box::new(pull_request.clone()),
             },
+            PullRequestDiffSource::Commit { index } => {
+                self.pr_commit_prepare_command(index, pull_request)
+            }
             PullRequestDiffSource::Stack { from, to } => {
                 let Some(stack) = self.pull_request_stack.clone() else {
                     self.document_loading = false;

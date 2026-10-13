@@ -2,6 +2,10 @@ use std::os::unix::fs::PermissionsExt;
 
 use super::*;
 
+#[path = "github/commit_views.rs"]
+mod commit_views;
+#[path = "github/large_commits.rs"]
+mod large_commits;
 #[path = "github/open.rs"]
 mod open;
 
@@ -28,6 +32,12 @@ case "$* $input" in
     ;;
   *"number=42"*)
     printf 'PR_node\t42\tAdd feature\tBody from fixture\toctocat\tOPEN\tfalse\t2026-08-21T02:00:00Z\thttps://github.com/acme/project/pull/42\tmain\tfeature\tacme/project\tfalse\t1\t0\t1\t%s\t%s\t2026-08-20T01:00:00Z\tfalse\ttrue\tfalse\ttrue\ttrue\ttrue\ttrue\ttrue\tSUBSCRIBED\tCLEAN\tMERGEABLE\ttrue\ttrue\t\t\t0\t\t\tAPPROVED\n' "$FAKE_BASE_OID" "$FAKE_HEAD_OID"
+    ;;
+  *"/check-runs?"*)
+    printf '{"total_count":1,"check_runs":[{"name":"Commit tests","status":"completed","conclusion":"success","details_url":"https://github.com/acme/project/actions/runs/77/job/123","app":{"name":"GitHub Actions"}}]}'
+    ;;
+  *"/status?"*)
+    printf '{"total_count":1,"statuses":[{"context":"External build","state":"failure","description":"Commit build failed","target_url":"https://example.test/build/42","created_at":"2026-08-21T01:00:00Z","updated_at":"2026-08-21T01:02:00Z"}]}'
     ;;
   "pr checks 42 "*)
     printf 'Unit tests\tCI\tSUCCESS\tpass\tAll tests passed\thttps://github.com/acme/project/actions/runs/77/job/123\t2026-08-21T01:00:00Z\t2026-08-21T01:02:00Z\n'
@@ -253,9 +263,13 @@ fn pull_request_files_uses_real_local_commits_in_plain_and_json() -> Result<()> 
 
 #[test]
 fn pull_request_commits_paginate_cache_and_render_in_both_modes() -> Result<()> {
-    let fixture = GitHubFixture::new()?;
+    let mut fixture = GitHubFixture::new()?;
+    fixture.base_oid = "a".repeat(40);
+    fixture.head_oid = "b".repeat(40);
 
-    let plain = fixture.read(&["pr", "commits", "42"])?.success()?;
+    let plain = fixture
+        .read(&["pr", "commits", "42", "--introduced-only"])?
+        .success()?;
 
     ensure!(plain.stderr.is_empty(), "{}", plain.stderr);
     let base = plain
@@ -269,7 +283,7 @@ fn pull_request_commits_paginate_cache_and_render_in_both_modes() -> Result<()> 
     ensure!(base < feature, "{}", plain.stdout);
 
     let json = fixture
-        .read(&["pr", "commits", "42", "--json"])?
+        .read(&["pr", "commits", "42", "--introduced-only", "--json"])?
         .success()?
         .json()?;
     ensure!(

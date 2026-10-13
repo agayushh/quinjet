@@ -75,7 +75,8 @@ pub(super) fn draw_pull_request_overview(
     theme: &Theme,
     link_hits: &mut Vec<LinkHit>,
 ) -> Vec<ContentStepHit> {
-    let showing_check = app.pull_request_check_cursor.is_some();
+    let showing_check = app.pull_request_section == PullRequestSection::Overview
+        && app.pull_request_check_cursor.is_some();
     let focused = app.focus == Focus::Content && app.modal.is_none();
     let inner = panel_block(String::new(), focused, theme).inner(area);
     if inner.width == 0 || inner.height == 0 {
@@ -94,11 +95,7 @@ pub(super) fn draw_pull_request_overview(
         app.relative_time_generation,
     );
     if app.pull_request_content_rows_key != Some(rows_key) {
-        app.pull_request_content_rows = if showing_check {
-            check_run_rows(app, width, theme)
-        } else {
-            conversation_rows(app, width, theme)
-        };
+        app.pull_request_content_rows = overview_rows(app, showing_check, width, theme);
         app.pull_request_content_width = app
             .pull_request_content_rows
             .iter()
@@ -231,6 +228,10 @@ pub(super) fn pull_request_content_links(
             },
         ];
     }
+    if app.selected_pr_commit().is_some() || app.pull_request_section == PullRequestSection::Commits
+    {
+        return Vec::new();
+    }
     let Some(pull_request) = app.selected_pull_request() else {
         return Vec::new();
     };
@@ -350,6 +351,15 @@ pub(super) fn content_row_text(row: &ContentRow) -> String {
 }
 
 pub(super) fn overview_title(app: &App, showing_check: bool) -> String {
+    if app.pull_request_section == PullRequestSection::Commits {
+        return " PR Head History ".to_owned();
+    }
+    if let Some(commit) = app.selected_pr_commit() {
+        let label = app
+            .selected_pull_request_check()
+            .map_or("CI checks", |check| check.name.as_str());
+        return format!(" Commit {} · {label} ", commit.abbreviated_oid);
+    }
     let Some(pull_request) = app.selected_pull_request() else {
         return " Pull Request ".to_owned();
     };
@@ -377,4 +387,16 @@ pub(super) fn overview_title(app: &App, showing_check: bool) -> String {
         ""
     };
     format!(" PR #{} · {state}{loading} ", pull_request.number)
+}
+
+fn overview_rows(app: &App, showing_check: bool, width: usize, theme: &Theme) -> Vec<ContentRow> {
+    if app.pull_request_section == PullRequestSection::Commits {
+        commit_browser_rows(app, theme)
+    } else if showing_check {
+        check_run_rows(app, width, theme)
+    } else if app.selected_pr_commit().is_some() {
+        commit_ci_rows(app, theme)
+    } else {
+        conversation_rows(app, width, theme)
+    }
 }

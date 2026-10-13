@@ -5,7 +5,7 @@ Lists a pull request's check runs, and optionally blocks until they settle.
 Usage:
 
 ```bash
-quinjet pr checks <number> [--repo <owner/name>] [--refresh] [--watch] [--interval <seconds>] [--exit-code] [-C <DIR>] [--json]
+quinjet pr checks <number> [--commit <hash>] [--repo <owner/name>] [--refresh] [--watch] [--interval <seconds>] [--exit-code] [-C <DIR>] [--json]
 ```
 
 Arguments:
@@ -199,3 +199,8 @@ requests a minute against your rate limit for the whole life of the job.
 - [Conventions and contracts](../conventions.md) for the shared exit-code table
   and what `--watch` does to the one-document rule
 - [All `quinjet` commands](../README.md)
+
+Use `--commit HASH` to inspect a commit from this pull request. A hash prefix
+must contain at least seven characters and uniquely match a commit reachable from the PR head.
+Files and patches compare that commit with its first parent. Checks and logs
+use that exact commit rather than the latest PR head.
