@@ -260,6 +260,34 @@ impl App {
                     self.pull_request_progress = Some(progress);
                 }
             }
+            WorkerEvent::Accounts { generation, result } => match result {
+                Ok(accounts) => {
+                    if generation != self.branch_generation {
+                        return effects;
+                    }
+                    if let Some(Modal::Prompt {
+                        title,
+                        input,
+                        kind: PromptKind::SwitchAccount { accounts: choices },
+                    }) = &mut self.modal
+                    {
+                        *title = format!(
+                            "GitHub: {} (Tab to choose, Enter to use)",
+                            accounts.logins.join(", ")
+                        );
+                        if input.value.is_empty() {
+                            *input = TextBuffer::new(
+                                accounts
+                                    .selected
+                                    .or_else(|| accounts.logins.first().cloned())
+                                    .unwrap_or_default(),
+                            );
+                        }
+                        *choices = accounts.logins;
+                    }
+                }
+                Err(error) => self.show_toast(error, ToastLevel::Error, now),
+            },
             WorkerEvent::Branches { generation, result } => {
                 if generation != self.branch_generation {
                     return effects;
