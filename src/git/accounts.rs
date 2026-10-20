@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 
 use super::Repository;
@@ -78,7 +78,10 @@ impl Repository {
         if !output.status.success() {
             bail!("No saved credential for {login}; run `gh auth login` for that account");
         }
-        let token = String::from_utf8(output.stdout)?.trim().to_owned();
+        let token = String::from_utf8(output.stdout)
+            .map_err(|_| anyhow!("Selected account credential is not valid UTF-8"))?
+            .trim()
+            .to_owned();
         if token.is_empty() {
             bail!("GitHub CLI returned an empty credential for {login}");
         }
@@ -242,9 +245,11 @@ impl Drop for ConfigLock {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::git::{GitOperation, tests::TestRepository};
     use anyhow::ensure;
+
+    use super::*;
+    use crate::git::GitOperation;
+    use crate::git::tests::TestRepository;
 
     #[test]
     fn account_selection_is_local_and_commits_keep_the_selected_identity() -> Result<()> {
@@ -280,6 +285,27 @@ mod tests {
         ensure!(error.to_string().contains("Cannot amend"));
         drop(personal.checked(["config", "user.email", "wrong@example.com"])?);
         ensure!(personal.verify_commit_account(false).is_err());
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn malformed_credentials_never_appear_in_errors() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+
+        let scratch = TestRepository::with_branch("main");
+        let script = scratch.repository().root().join("fake-gh");
+        std::fs::write(
+            &script,
+            "#!/bin/sh\nprintf 'private-credential-value\\377'\n",
+        )?;
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700))?;
+        let repo = scratch.repository_with_github_cli(script);
+        let error = repo
+            .account_token("personal")
+            .err()
+            .context("Invalid UTF-8 must fail")?;
+        ensure!(error.to_string() == "Selected account credential is not valid UTF-8");
         Ok(())
     }
 

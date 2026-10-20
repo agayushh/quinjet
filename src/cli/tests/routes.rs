@@ -30,7 +30,7 @@ macro_rules! operation_routes {
                     let path = verb_for(operation);
                     assert!(
                         resolves(path),
-                        "{operation:?} names the verb {path:?}, which the command tree does not have"
+                        "the operation names the verb {path:?}, which the command tree does not have"
                     );
                 }
                 let kinds: HashSet<_> = operations.iter().map(std::mem::discriminant).collect();
