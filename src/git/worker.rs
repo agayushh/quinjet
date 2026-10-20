@@ -150,6 +150,9 @@ pub(crate) enum WorkerCommand {
         generation: u64,
         pull_requests: Vec<PullRequest>,
     },
+    LoadAccounts {
+        generation: u64,
+    },
     LoadBranches {
         generation: u64,
     },
@@ -279,6 +282,10 @@ pub(crate) enum WorkerEvent {
         generation: u64,
         result: Result<CheckRunLog, String>,
     },
+    Accounts {
+        generation: u64,
+        result: Result<super::accounts::Accounts, String>,
+    },
     Branches {
         generation: u64,
         result: Result<Vec<Branch>, String>,
@@ -346,7 +353,8 @@ impl Mailbox {
             | WorkerCommand::OperatePullRequestReview { .. }) => {
                 self.operations.push_back(command);
             }
-            command @ (WorkerCommand::LoadBranches { .. }
+            command @ (WorkerCommand::LoadAccounts { .. }
+            | WorkerCommand::LoadBranches { .. }
             | WorkerCommand::LoadHistoryBranches { .. }
             | WorkerCommand::LoadStashes { .. }) => self.branches = Some(command),
             command @ (WorkerCommand::LoadWorktrees { .. }
