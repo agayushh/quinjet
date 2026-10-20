@@ -45,6 +45,7 @@ macro_rules! operation_routes {
 
 operation_routes! {
     GitOperation::Stage(_) => GitOperation::Stage(Vec::new()) => ["stage"];
+    GitOperation::SwitchAccount(_) => GitOperation::SwitchAccount(String::new()) => ["account", "switch"];
     GitOperation::StageAll => GitOperation::StageAll => ["stage"];
     GitOperation::Unstage(_) => GitOperation::Unstage(Vec::new()) => ["unstage"];
     GitOperation::UnstageAll => GitOperation::UnstageAll => ["unstage"];
