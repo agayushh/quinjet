@@ -72,6 +72,11 @@ The palettes are `quinjet`, `catppuccin`, `dracula`, `everforest`, `gruvbox`,
 `nord`, `one`, `rose-pine`, `solarized`, `tokyo-night`, `ayu`, `monokai`, and
 `github`. The last is labeled `GitHub` in the picker. The default is `quinjet`.
 
+System appearance detection uses the desktop portal utilities (`gdbus` or
+`dbus-send`) with a `gsettings` fallback on Linux, `defaults` on macOS, and
+`reg.exe` on Windows. Queries have time limits; unavailable settings retain the
+dark fallback. Explicit light and dark appearance flags do not query the system.
+
 Inside the interface, open the command palette with `:` or `Ctrl+P`. `Change
 Theme…` opens all thirteen palettes and `Change Appearance…` opens the system,
 light, and dark choices. Moving through the theme list previews each palette
