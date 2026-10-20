@@ -240,3 +240,101 @@ impl Drop for ConfigLock {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::git::{GitOperation, tests::TestRepository};
+    use anyhow::ensure;
+
+    #[test]
+    fn account_selection_is_local_and_commits_keep_the_selected_identity() -> Result<()> {
+        let personal = TestRepository::with_branch("main");
+        let company = TestRepository::with_branch("main");
+        let personal = personal.repository();
+        let company = company.repository();
+        personal.save_account("personal", "Personal", "personal@example.com")?;
+        company.save_account("company", "Company", "company@example.com")?;
+        for (repo, name, email) in [
+            (&personal, "Personal", "personal@example.com"),
+            (&company, "Company", "company@example.com"),
+        ] {
+            std::fs::write(repo.root().join("new.txt"), "new content")?;
+            drop(repo.perform(&GitOperation::StageAll)?);
+            drop(repo.perform(&GitOperation::Commit {
+                message: "identity test".to_owned(),
+                amend: false,
+            })?);
+            let author =
+                String::from_utf8(repo.checked(["log", "-1", "--format=%an <%ae>|%cn <%ce>"])?)?;
+            ensure!(author.trim() == format!("{name} <{email}>|{name} <{email}>"));
+        }
+        ensure!(personal.status()?.account.as_deref() == Some("personal"));
+        ensure!(company.status()?.account.as_deref() == Some("company"));
+        personal.save_account("another", "Another", "another@example.com")?;
+        ensure!(personal.status()?.account.as_deref() == Some("another"));
+        ensure!(company.account_config("user.email")?.as_deref() == Some("company@example.com"));
+        let error = personal
+            .verify_commit_account(true)
+            .err()
+            .context("cross-account amend should fail")?;
+        ensure!(error.to_string().contains("Cannot amend"));
+        drop(personal.checked(["config", "user.email", "wrong@example.com"])?);
+        ensure!(personal.verify_commit_account(false).is_err());
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verifies_saved_credentials_before_mutating_and_pins_api_identity() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+        let scratch = TestRepository::with_branch("main");
+        let script = scratch.repository().root().join("fake-gh");
+        std::fs::write(
+            &script,
+            r#"#!/bin/sh
+if [ "$1 $2" = 'auth token' ]; then printf 'saved-test-token'; exit 0; fi
+if [ "$1" = api ]; then
+  test "$GH_TOKEN" = saved-test-token || exit 1
+  printf '{"login":"personal","id":123,"name":"Personal"}'
+  exit 0
+fi
+exit 1
+"#,
+        )?;
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700))?;
+        let repo = scratch.repository_with_github_cli(script);
+        let before = std::fs::read(repo.root().join(".git/config"))?;
+        ensure!(repo.switch_account("company").is_err());
+        ensure!(std::fs::read(repo.root().join(".git/config"))? == before);
+        drop(repo.switch_account("personal")?);
+        ensure!(
+            repo.account_config("user.email")?.as_deref()
+                == Some("123+personal@users.noreply.github.com")
+        );
+        let mut command = Command::new("unused");
+        repo.pin_github_command(&mut command)?;
+        ensure!(command.get_envs().any(|(key, value)| key == "GH_TOKEN" && value == Some("saved-test-token".as_ref())));
+        ensure!(
+            !std::fs::read_to_string(repo.root().join(".git/config"))?.contains("saved-test-token")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn switch_respects_git_config_lock_and_rejects_shell_input() -> Result<()> {
+        for login in ["", "-flag", "name;id", "a b", "$(id)", "trailing-"] {
+            ensure!(validate_login(login).is_err(), "{login}");
+        }
+        let scratch = TestRepository::with_branch("main");
+        let repo = scratch.repository();
+        let lock = repo.root().join(".git/config.lock");
+        std::fs::write(&lock, "locked")?;
+        ensure!(
+            repo.save_account("personal", "Personal", "personal@example.com")
+                .is_err()
+        );
+        ensure!(std::fs::read_to_string(lock)? == "locked");
+        ensure!(repo.account_config("quinjet.account")?.is_none());
+        Ok(())
+    }
+}
