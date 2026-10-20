@@ -94,24 +94,9 @@ impl App {
                 if matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
                     && let PromptKind::SwitchAccount { accounts } = kind
                 {
-                    let current = accounts.iter().position(|login| *login == input.value);
                     let reverse =
                         key.code == KeyCode::BackTab || key.modifiers.contains(KeyModifiers::SHIFT);
-                    let next = current.map_or(0, |index| {
-                        if reverse {
-                            index
-                                .checked_sub(1)
-                                .unwrap_or_else(|| accounts.len().saturating_sub(1))
-                        } else {
-                            index
-                                .saturating_add(1)
-                                .checked_rem(accounts.len())
-                                .unwrap_or_default()
-                        }
-                    });
-                    if let Some(login) = accounts.get(next) {
-                        *input = TextBuffer::new(login.clone());
-                    }
+                    account_picker::cycle_account(input, accounts, reverse);
                     self.modal = Some(modal);
                     return effects;
                 }
