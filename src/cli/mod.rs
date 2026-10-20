@@ -1,3 +1,4 @@
+mod account;
 pub(crate) mod command;
 mod completion;
 mod package_manager;
@@ -167,6 +168,11 @@ enum Verb {
     Tui(TuiArgs),
     #[doc = " Show the working tree, the index and the branch"]
     Status(WatchableArgs),
+    #[doc = " List or switch repository GitHub identities"]
+    Account {
+        #[command(subcommand)]
+        command: account::AccountVerb,
+    },
     #[doc = " Print the working-tree diff"]
     Diff(DiffArgs),
     #[doc = " Stage paths, or everything"]
@@ -258,6 +264,7 @@ impl Verb {
             | Self::Man(_)
             | Self::Capabilities => None,
             Self::Status(args) if args.watch => None,
+            Self::Account { .. } => Some("Reading GitHub accounts"),
             Self::Status(_) => Some("Reading repository status"),
             Self::Diff(_) => Some("Loading the working-tree diff"),
             Self::Stage(_) => Some("Staging changes"),
