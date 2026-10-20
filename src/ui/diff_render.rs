@@ -422,7 +422,7 @@ pub(super) fn draw_footer(
         .account
         .as_deref()
         .map_or_else(|| "Account unset".to_owned(), |login| format!("@{login}"));
-    let account_label = format!(" Ctrl+G  {account} ");
+    let account_label = format!(" {account} ");
     let account_width = cells(account_label.width()).min(area.width);
     let area = Rect {
         width: area.width.saturating_sub(account_width),
@@ -453,10 +453,10 @@ pub(super) fn draw_footer(
         full_area.height.saturating_sub(1).min(1),
     );
     frame.render_widget(
-        Paragraph::new(Line::from(vec![
-            Span::styled(" Ctrl+G  ", Style::default().fg(theme.muted)),
-            Span::styled(format!("{account} "), Style::default().fg(theme.accent)),
-        ]))
+        Paragraph::new(Line::from(Span::styled(
+            account_label,
+            Style::default().fg(theme.accent),
+        )))
         .alignment(Alignment::Right)
         .style(Style::default().bg(theme.panel_alt)),
         account_area,

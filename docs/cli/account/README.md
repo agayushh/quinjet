@@ -15,8 +15,8 @@ press `Ctrl+G`, then `Tab` to choose a saved login and `Enter` to use it.
 The command palette (`Ctrl+P` or `:`) also provides
 **Switch GitHub Account for This Repository…**.
 
-The bottom-right status bar shows the selected repository username beside
-`Ctrl+G`. It updates after switching accounts and when repository status
+The bottom-right status bar shows only the selected repository username.
+It updates after switching accounts and when repository status
 refreshes. An unconfigured repository shows **Account unset**.
 
 Switching verifies the selected credential against GitHub before changing the
