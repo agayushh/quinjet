@@ -1,7 +1,7 @@
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-use super::Appearance;
+use crate::theme::Appearance;
 
 fn query(program: &str, args: &[&str]) -> Option<String> {
     let mut child = Command::new(program)
@@ -32,7 +32,7 @@ fn query(program: &str, args: &[&str]) -> Option<String> {
 }
 
 #[cfg(target_os = "macos")]
-pub(super) fn detect() -> Option<Appearance> {
+pub(crate) fn detect() -> Option<Appearance> {
     let output = query("/usr/bin/defaults", &["read", "-g"])?;
     Some(
         if output
@@ -47,7 +47,7 @@ pub(super) fn detect() -> Option<Appearance> {
 }
 
 #[cfg(windows)]
-pub(super) fn detect() -> Option<Appearance> {
+pub(crate) fn detect() -> Option<Appearance> {
     let output = query(
         "reg.exe",
         &[
@@ -65,7 +65,7 @@ pub(super) fn detect() -> Option<Appearance> {
 }
 
 #[cfg(not(any(windows, target_os = "macos")))]
-pub(super) fn detect() -> Option<Appearance> {
+pub(crate) fn detect() -> Option<Appearance> {
     let output = query(
         "gdbus",
         &[

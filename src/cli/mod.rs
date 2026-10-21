@@ -10,6 +10,7 @@ mod search;
 mod session;
 mod stack;
 mod stack_verbs;
+pub(crate) mod system_appearance;
 pub(crate) mod terminal_query;
 mod tui_args;
 mod update;

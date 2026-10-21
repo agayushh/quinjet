@@ -1,5 +1,3 @@
-mod native;
-
 use std::time::Duration;
 
 use clap::ValueEnum;
@@ -45,7 +43,11 @@ fn detect_system_appearance() -> Option<Appearance> {
     drop(
         std::thread::Builder::new()
             .name("system-appearance".to_owned())
-            .spawn(move || sender.send(native::detect()).unwrap_or_else(drop))
+            .spawn(move || {
+                sender
+                    .send(crate::cli::system_appearance::detect())
+                    .unwrap_or_else(drop);
+            })
             .ok()?,
     );
     receiver.recv_timeout(SYSTEM_APPEARANCE_TIMEOUT).ok()?
