@@ -371,7 +371,7 @@ quinjet account list
 
 In the interface, press `Ctrl+G` to open the account switcher directly, or
 press `Ctrl+P` and choose **Switch GitHub Account for This Repository…**.
-Press `Tab` to choose a saved login and `Enter` to use it. Each repository
+Press `↑` / `↓` to choose a saved login from the account list and `Enter` to use it. Each repository
 remembers its own commit identity and HTTPS credentials. GitHub API operations use the same selected account.
 
 See [account switching](docs/cli/account/README.md) for SSH, signing, linked

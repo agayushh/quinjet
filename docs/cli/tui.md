@@ -440,7 +440,7 @@ The verbs in the right-hand column are documented in their groups:
 | Remove Checked Files in the dropdown, then `y` or Enter | `quinjet remove <paths> --yes` |
 | Revert Unstaged Changes / Revert All Changes in the dropdown, then `y` or Enter | `quinjet discard <paths> --yes` |
 | `x` on a conflict | opens the conflict resolution modal, matching `quinjet resolve <path> --ours`, `--theirs`, or `--stage`; conflict discard is not an operation |
-| `Ctrl+G`, then `Tab` and `Enter` | `quinjet account switch <login>` |
+| `Ctrl+G`, then `↑` / `↓` and `Enter` | `quinjet account switch <login>` |
 | `c`, then `Ctrl+Enter` | `quinjet commit -m "<message>"` |
 | Amend in the command palette | `quinjet commit -m "<message>" --amend` |
 | `o` in the conflict modal | `quinjet resolve <path> --ours` |

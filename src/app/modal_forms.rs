@@ -91,25 +91,10 @@ impl App {
                     self.schedule_preview(now);
                     return effects;
                 }
-                if matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
-                    && let PromptKind::SwitchAccount { accounts } = kind
-                {
-                    let reverse =
-                        key.code == KeyCode::BackTab || key.modifiers.contains(KeyModifiers::SHIFT);
-                    account_picker::cycle_account(input, accounts, reverse);
-                    self.modal = Some(modal);
-                    return effects;
-                }
                 if key.code == KeyCode::Enter {
                     match kind {
                         PromptKind::Filter { mode, .. } => {
                             self.update_live_search(&input.value, *mode, now);
-                        }
-                        PromptKind::SwitchAccount { .. } => {
-                            self.queue_operation(
-                                GitOperation::SwitchAccount(input.value.trim().to_owned()),
-                                &mut effects,
-                            );
                         }
                         PromptKind::CreateBranch { start } => {
                             self.queue_operation(

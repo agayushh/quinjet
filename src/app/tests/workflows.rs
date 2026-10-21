@@ -286,25 +286,42 @@ fn command_palette_switches_theme_and_appearance_in_place() {
 }
 
 #[test]
-fn account_switcher_cycles_saved_logins_and_queues_the_selected_identity() {
+fn account_switcher_lists_saved_logins_and_queues_the_selected_identity() {
     let mut app = App::new("/tmp/repo", "repo");
     let now = Instant::now();
     let mut effects = Vec::new();
     app.execute_palette(PaletteCommand::SwitchAccount, &mut effects, now);
     let generation = app.branch_generation;
-    drop(app.handle_worker_event(
-        WorkerEvent::Accounts {
-            generation,
-            result: Ok(crate::git::accounts::Accounts {
-                logins: vec!["personal".to_owned(), "company".to_owned()],
-                selected: Some("personal".to_owned()),
-                name: "Personal".to_owned(),
-                email: "personal@example.com".to_owned(),
-            }),
-        },
-        now,
-    ));
-    drop(app.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE), now));
+    drop(
+        app.handle_worker_event(
+            WorkerEvent::Accounts {
+                generation,
+                result: Ok(crate::git::accounts::Accounts {
+                    logins: ["other", "personal", "company", "service"]
+                        .map(str::to_owned)
+                        .to_vec(),
+                    selected: Some("personal".to_owned()),
+                    name: "Personal".to_owned(),
+                    email: "personal@example.com".to_owned(),
+                }),
+            },
+            now,
+        ),
+    );
+    assert!(matches!(&app.modal, Some(Modal::Accounts(picker))
+        if picker.selected == 1 && picker.items.len() == 4 && picker.current.as_deref() == Some("personal")));
+    for key in [
+        KeyCode::Home,
+        KeyCode::Up,
+        KeyCode::Down,
+        KeyCode::End,
+        KeyCode::Up,
+    ] {
+        assert!(
+            app.handle_key(KeyEvent::new(key, KeyModifiers::NONE), now)
+                .is_empty()
+        );
+    }
     let effects = app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), now);
     assert!(effects.iter().any(|effect| matches!(effect,
         AppEffect::Git(command) if matches!(command.as_ref(), WorkerCommand::Operate {
@@ -324,13 +341,7 @@ fn account_shortcut_opens_from_every_view_without_switching_before_confirmation(
             KeyEvent::new(KeyCode::Char('g'), KeyModifiers::CONTROL),
             now,
         );
-        assert!(matches!(
-            app.modal,
-            Some(Modal::Prompt {
-                kind: PromptKind::SwitchAccount { .. },
-                ..
-            })
-        ));
+        assert!(matches!(app.modal, Some(Modal::Accounts(_))));
         assert!(effects.iter().any(|effect| matches!(effect,
             AppEffect::Git(command) if matches!(command.as_ref(), WorkerCommand::LoadAccounts { .. })
         )));

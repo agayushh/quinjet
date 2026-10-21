@@ -10,8 +10,10 @@ quinjet -C ~/code/company-project account switch ayushflickly
 quinjet account list --json
 ```
 
-Log in to both accounts first with `gh auth login`. In the terminal interface,
-press `Ctrl+G`, then `Tab` to choose a saved login and `Enter` to use it.
+Log in to each account first with `gh auth login`. In the terminal interface,
+press `Ctrl+G`, then `↑` / `↓` to choose a saved login from the account list and `Enter` to use it.
+The list shows all saved GitHub.com accounts and marks the current repository
+account. Use `Home` / `End` to jump to either end, or `Esc` to cancel.
 The command palette (`Ctrl+P` or `:`) also provides
 **Switch GitHub Account for This Repository…**.
 

@@ -207,9 +207,6 @@ impl TextBuffer {
 
 #[derive(Debug, Clone)]
 pub(crate) enum PromptKind {
-    SwitchAccount {
-        accounts: Vec<String>,
-    },
     Filter {
         previous: String,
         previous_mode: SearchMode,
@@ -302,6 +299,7 @@ pub(crate) enum ModalAction {
 
 #[derive(Debug, Clone)]
 pub(crate) enum Modal {
+    Accounts(account_picker::AccountPicker),
     Help {
         selected: usize,
         scroll: usize,

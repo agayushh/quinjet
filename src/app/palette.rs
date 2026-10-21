@@ -11,13 +11,7 @@ impl App {
         match command {
             PaletteCommand::SwitchAccount => {
                 self.branch_generation = self.branch_generation.wrapping_add(1);
-                self.modal = Some(Modal::Prompt {
-                    title: "Loading GitHub accounts…".to_owned(),
-                    input: TextBuffer::default(),
-                    kind: PromptKind::SwitchAccount {
-                        accounts: Vec::new(),
-                    },
-                });
+                self.modal = Some(Modal::Accounts(account_picker::AccountPicker::default()));
                 effects.push(AppEffect::Git(Box::new(WorkerCommand::LoadAccounts {
                     generation: self.branch_generation,
                 })));
